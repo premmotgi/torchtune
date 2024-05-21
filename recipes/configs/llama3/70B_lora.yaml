@@ -20,11 +20,11 @@ model:
 
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
-  path: /tmp/Meta-Llama-3-70B-Instruct/original/tokenizer.model
+  path: /root/torchtune/Meta-Llama-3-70B/original/tokenizer.model
 
 checkpointer:
   _component_: torchtune.utils.FullModelHFCheckpointer
-  checkpoint_dir:  /tmp/Meta-Llama-3-70B-Instruct
+  checkpoint_dir:  /root/torchtune/Meta-Llama-3-70B
   checkpoint_files: [
     model-00001-of-00030.safetensors,
     model-00002-of-00030.safetensors,
@@ -64,7 +64,7 @@ resume_from_checkpoint: False
 
 # Dataset and Sampler
 dataset:
-  _component_: torchtune.datasets.alpaca_dataset
+  _component_: torchtune.datasets.databricks_dolly_15k
   train_on_input: True
 seed: null
 shuffle: True
@@ -97,5 +97,5 @@ log_peak_memory_stats: False
 
 # Environment
 device: cuda
-dtype: bf16
+dtype: fp32
 enable_activation_checkpointing: True
