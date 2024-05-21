@@ -84,7 +84,19 @@ class InstructDataset(Dataset):
         transformed_sample = self._transform(sample) if self._transform else sample
 
         prompt = self.template.format(transformed_sample, self._column_map)
-        key_output = (
+
+        key_output=None
+
+        databricks_dolly= True
+        if databricks_dolly:
+            key_output = (
+            self._column_map["response"]
+            if self._column_map and "response" in self._column_map
+            else "response"
+        )
+        else:
+
+            key_output = (
             self._column_map["output"]
             if self._column_map and "output" in self._column_map
             else "output"
