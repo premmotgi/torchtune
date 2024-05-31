@@ -20,11 +20,11 @@ model:
 
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
-  path: /root/torchtune/Meta-Llama-3-70B/original/tokenizer.model
+  path: /work/torchtune/Meta-Llama-3-70B/original/tokenizer.model
 
 checkpointer:
   _component_: torchtune.utils.FullModelHFCheckpointer
-  checkpoint_dir:  /root/torchtune/Meta-Llama-3-70B
+  checkpoint_dir:  /work/torchtune/Meta-Llama-3-70B
   checkpoint_files: [
     model-00001-of-00030.safetensors,
     model-00002-of-00030.safetensors,
