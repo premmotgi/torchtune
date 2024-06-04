@@ -20,7 +20,7 @@
 # Tokenizer
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
-  path: /tmp/Meta-Llama-3-8B-Instruct/original/tokenizer.model
+  path: /work/torchtune/Meta-Llama-3-70B/original/tokenizer.model
 
 # Model Arguments
 model:
@@ -33,12 +33,12 @@ model:
 
 checkpointer:
   _component_: torchtune.utils.FullModelMetaCheckpointer
-  checkpoint_dir: /tmp/Meta-Llama-3-8B-Instruct/original/
+  checkpoint_dir: /work/torchtune/Meta-Llama-3-8B
   checkpoint_files: [
     consolidated.00.pth
   ]
   recipe_checkpoint: null
-  output_dir: /tmp/Meta-Llama-3-8B-Instruct/
+  output_dir: /tmp/Meta-Llama-3-70B-Instruct
   model_type: LLAMA3
 resume_from_checkpoint: False
 
@@ -77,5 +77,5 @@ log_peak_memory_stats: False
 
 # Environment
 device: cuda
-dtype: bf16
+dtype: fp32
 enable_activation_checkpointing: False
