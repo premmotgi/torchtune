@@ -69,10 +69,9 @@ batch_size: 2
 optimizer:
   _component_: torch.optim.AdamW
   weight_decay: 0.01
-  lr: 3e-4
-lr_scheduler:
-  _component_: torchtune.modules.get_cosine_schedule_with_warmup
-  num_warmup_steps: 100
+  lr: 2e-5
+  foreach: False
+  fused: True
 
 loss:
   _component_: torch.nn.CrossEntropyLoss
@@ -96,3 +95,4 @@ device: cuda
 dtype: bf16
 enable_activation_checkpointing: True
 memory_efficient_fsdp_wrap: True
+fsdp_cpu_offload: True
