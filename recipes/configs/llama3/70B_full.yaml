@@ -11,7 +11,7 @@
 
 # Model Arguments
 model:
-  _component_: torchtune.models.llama3.lora_llama3_70b
+  _component_: torchtune.models.llama3.llama3_70b
 
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
