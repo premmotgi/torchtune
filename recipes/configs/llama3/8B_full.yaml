@@ -21,11 +21,11 @@
 # Tokenizer
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
-  path: /tmp/Meta-Llama-3-8B-Instruct/original/tokenizer.model
+  path: /work/torchtune/Meta-Llama-3-70B/original/tokenizer.model
 
 # Dataset
 dataset:
-  _component_: torchtune.datasets.alpaca_dataset
+  _component_: torchtune.datasets.databricks_dolly_15k
   train_on_input: True
 seed: null
 shuffle: True
@@ -36,7 +36,7 @@ model:
 
 checkpointer:
   _component_: torchtune.utils.FullModelMetaCheckpointer
-  checkpoint_dir: /tmp/Meta-Llama-3-8B-Instruct/original/
+  checkpoint_dir: /work/torchtune/Meta-Llama-3-8B/original
   checkpoint_files: [
     consolidated.00.pth
   ]
@@ -47,7 +47,7 @@ resume_from_checkpoint: False
 
 # Fine-tuning arguments
 batch_size: 2
-epochs: 3
+epochs: 1
 
 optimizer:
   _component_: torch.optim.AdamW
@@ -72,8 +72,9 @@ dtype: bf16
 
 # Logging
 metric_logger:
-  _component_: torchtune.utils.metric_logging.DiskLogger
+  _component_: torchtune.utils.metric_logging.TensorBoardLogger
   log_dir: ${output_dir}
+  organize_logs: true
 output_dir: /tmp/alpaca-llama3-finetune
 log_every_n_steps: 1
 log_peak_memory_stats: False
