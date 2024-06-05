@@ -95,4 +95,4 @@ device: cuda
 dtype: bf16
 enable_activation_checkpointing: True
 memory_efficient_fsdp_wrap: True
-fsdp_cpu_offload: True
+#fsdp_cpu_offload: True
