@@ -65,7 +65,8 @@ loss:
 # Training
 epochs: 1
 max_steps_per_epoch: null
-gradient_accumulation_steps: 32
+gradient_accumulation_steps: 1 
+#old value was 32
 
 # Logging
 output_dir: /tmp/lora_finetune_output
