@@ -23,13 +23,16 @@ output_dir: /tmp/torchtune/llama3_8B/full # /tmp may be deleted by your system. 
 # Tokenizer
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
-  path: /tmp/Meta-Llama-3-8B-Instruct/original/tokenizer.model
-  max_seq_len: null
 
+  path: /tmp/Meta-Llama-3-8B-Instruct/original/tokenizer.model
 # Dataset
 dataset:
-  _component_: torchtune.datasets.alpaca_dataset
+  _component_: torchtune.datasets.databricks_dolly_15k
+  train_on_input: True
+  path: 
+  max_seq_len: null
   packed: False  # True increases speed
+
 seed: null
 shuffle: True
 
@@ -38,8 +41,10 @@ model:
   _component_: torchtune.models.llama3.llama3_8b
 
 checkpointer:
+
   _component_: torchtune.training.FullModelMetaCheckpointer
   checkpoint_dir: /tmp/Meta-Llama-3-8B-Instruct/original/
+
   checkpoint_files: [
     consolidated.00.pth
   ]
@@ -77,8 +82,10 @@ dtype: bf16
 
 # Logging
 metric_logger:
+
   _component_: torchtune.training.metric_logging.DiskLogger
   log_dir: ${output_dir}/logs
+
 log_every_n_steps: 1
 log_peak_memory_stats: True
 

@@ -4,9 +4,11 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
+
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional, TypeVar, Union
 from urllib import request
+
 
 import torch
 import torchvision
@@ -25,6 +27,7 @@ T = TypeVar("T", bound=type)
 def truncate(
     tokens: List[Any],
     max_seq_len: int,
+
     eos_id: Optional[Any] = None,
     truncation_type: str = "right",
 ) -> List[Any]:
@@ -58,6 +61,7 @@ def truncate(
 
     # Replace the last token with eos_id if necessary
     if eos_id is not None and tokens_truncated and tokens_truncated[-1] != eos_id:
+
         tokens_truncated[-1] = eos_id
 
     return tokens_truncated

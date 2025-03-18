@@ -16,7 +16,7 @@ def instruct_dataset(
     tokenizer: ModelTokenizer,
     *,
     source: str,
-    column_map: Optional[Dict[str, str]] = None,
+    column_map: Optional[Dict[str, str]] = {"input": "instruction", "output": "response"},
     train_on_input: bool = False,
     new_system_prompt: Optional[str] = None,
     packed: bool = False,
@@ -38,9 +38,11 @@ def instruct_dataset(
         |-----------------|------------------|
         | "user prompt"   | "model response" |
 
+
     If your column names are different, you can use the ``column_map`` parameter to change
     the expected column names. For example, if your dataset has columns ``"question"`` and
     ``"answer"`` you can use::
+
 
         column_map = {"input": "question", "output": "answer"}
 

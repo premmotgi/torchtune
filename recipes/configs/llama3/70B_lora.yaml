@@ -23,6 +23,7 @@ model:
 
 tokenizer:
   _component_: torchtune.models.llama3.llama3_tokenizer
+
   path: /tmp/Meta-Llama-3-70B-Instruct/original/tokenizer.model
   max_seq_len: null
 
@@ -32,6 +33,7 @@ checkpointer:
   checkpoint_files:
     filename_format: model-{}-of-{}.safetensors
     max_filename: "00030"
+
   recipe_checkpoint: null
   output_dir: ${output_dir}
   model_type: LLAMA3
@@ -40,7 +42,8 @@ save_adapter_weights_only: False
 
 # Dataset and Sampler
 dataset:
-  _component_: torchtune.datasets.alpaca_dataset
+  _component_: torchtune.datasets.databricks_dolly_15k
+  train_on_input: True
   packed: False  # True increases speed
 seed: null
 shuffle: True
@@ -60,21 +63,24 @@ loss:
   _component_: torchtune.modules.loss.CEWithChunkedOutputLoss
 
 # Training
-epochs: 1
+epochs: 3
 max_steps_per_epoch: null
 gradient_accumulation_steps: 1  # Use to increase effective batch size
 clip_grad_norm: null
 compile: False  # torch.compile the model + loss, True increases speed + decreases memory
 
 # Logging
+
 metric_logger:
   _component_: torchtune.training.metric_logging.DiskLogger
   log_dir: ${output_dir}/logs
+
 log_every_n_steps: 1
 log_peak_memory_stats: True
 
 # Environment
 device: cuda
+
 dtype: bf16
 enable_activation_checkpointing: True  # True reduces memory
 enable_activation_offloading: False  # True reduces memory
@@ -105,3 +111,4 @@ profiler:
   warmup_steps: 3
   active_steps: 2
   num_cycles: 1
+

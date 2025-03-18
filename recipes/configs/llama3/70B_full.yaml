@@ -32,10 +32,11 @@ tokenizer:
 
 # Dataset
 dataset:
-  _component_: torchtune.datasets.alpaca_dataset
-  packed: False  # True increases speed
+  _component_: torchtune.datasets.databricks_dolly_15k
+  train_on_input: True
 seed: null
 shuffle: True
+batch_size: 2
 
 # Model Arguments
 model:
@@ -113,3 +114,4 @@ profiler:
   warmup_steps: 3
   active_steps: 2
   num_cycles: 1
+
