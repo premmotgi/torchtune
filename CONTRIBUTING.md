@@ -5,16 +5,26 @@ We want to make contributing to this project as easy and transparent as possible
 
 ## Dev install
 You should first [fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) the torchtune repository
-and then clone your forked repository.
+and then clone your forked repository. Make sure to keep your fork in sync with the torchtune repository over time.
 
 ```git clone https://github.com/<YOUR_GITHUB_USER>/torchtune.git```
 
 Then navigate into the newly cloned repo and install dependencies needed for development.
 
+**Step 1:** [Install PyTorch](https://pytorch.org/get-started/locally/). torchtune is tested with the latest stable PyTorch release as well as the preview nightly version.
+
+
+**Step 2:** Install all the additional dependencies and dev dependencies in the local repo:
+
 ```
 cd torchtune
 pip install -e ".[dev]"
 ```
+
+&nbsp;
+
+> [!NOTE]
+> PyPI releases for `bitsandbytes` may not be available for platforms without CUDA support, or which use other accelerator backends (e.g. MPS or XPU). If this is the case, you must remove the `bitsandbytes` dependency in the [`project.toml`](pyproject.toml) file. You may also wish to manually install `bitsandbytes` - please see the [`bitsandbytes` multi-backend documentation](https://huggingface.co/docs/bitsandbytes/main/en/installation#multi-backend) for more information.
 
 &nbsp;
 
@@ -50,6 +60,9 @@ Whenever running tests in torchtune, favor using the command line flags as much 
 
 Note that the above flags can be combined with other pytest flags, so e.g. `pytest tests -m integration_test -k 'test_loss'` will run only recipe tests matching the substring `test_loss`.
 
+> [!NOTE]
+> Expected reference values for many of our tests have been calculated on Intel-based CPUs, or CUDA-based GPUs. Precision differences when testing on other hardware may cause certain tests to fail due to calculated values falling outside the configured tolerance limits. These tests may be skipped based on detected hardware (e.g. for [MPS](https://github.com/pytorch/torchtune/blob/ca95345b732d41bab7261d208cd5c860a2f76a5a/tests/test_utils.py#L345)).
+
 &nbsp;
 
 ## Updating documentation
@@ -69,6 +82,22 @@ directory should be added to `api_ref_configs.rst`, [data/](torchtune/data) shou
 All code written within the docstring of the class or method will be correctly rendered there.
 
 > Note: Our RST theme expects code to be specified using double backticks instead of single. Eg: ``hidden_dim``. Single backticks will be rendered as italics instead of as "code".
+
+### Adding documentation for a recipe
+
+If you've contributed a new recipe, or you're interesting in adding documentation for an existing recipe, you can add a new page in [the recipes directory](docs/source/recipes). Please refer to existing recipe docpages to understand the format of these documentation pages. Broadly speaking:
+
+- Recipe documentation pages are like beefed up API references for recipes.
+- They should have a low noise/information ratio, i.e. information in the recipe documentation page should mostly be relevant for using that recipe.
+- Relevant information could include:
+  - A cookbook/manual-style description of all the ways in which the recipe can be modified. For instance, does it support different loss functions? If so, describe those loss functions and help a user understand when they might want to use them.
+  - Example commands for using and customizing the recipe, particularly w.r.t the specific knobs and levers unique to the recipe.
+  - Pre-requisites for the recipe including models and datasets.
+  - Reference outputs for a recipe to help a user understand what successful training looks like e.g. loss curves, eval results, generations, etc.
+  - References to the appropriate [memory optimization](https://pytorch.org/torchtune/main/tutorials/memory_optimizations.html) features which can be used in the recipe. If you've contributed new memory optimization features which could be used across other recipes, consider adding them to the overview!
+
+
+Finally, make sure you update the [recipe overview page](docs/source/recipes/recipes_overview.rst), and the [index sidebar](docs/source/index.rst).
 
 ### Building docs
 

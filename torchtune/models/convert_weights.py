@@ -6,10 +6,9 @@
 
 import re
 
-from typing import Dict
+from typing import Any, Dict, Optional
 
 import torch
-
 
 # state dict key mappings from Meta's format to torchtune's format
 _FROM_META = {
@@ -47,7 +46,8 @@ _FROM_HF = {
 
 def get_mapped_key(key: str, mapping_dict: Dict[str, str]) -> str:
     try:
-        if "layers" in key:
+        # Checks if there is a layer # in the key
+        if any(k.isdigit() for k in key.split(".")):
             # Replace layer number with "{}" to create key for lookup
             abstract_key = re.sub(r"(\.\d+)", ".{}", key)
             layer_num = re.search(r"\d+", key).group(0)
@@ -154,6 +154,7 @@ def hf_to_tune(
                 value = _permute(value, num_heads)
             elif "k_proj" in key:
                 value = _permute(value, num_kv_heads)
+
             converted_state_dict[new_key] = value
     return converted_state_dict
 
@@ -163,6 +164,7 @@ def tune_to_hf(
     num_heads: int = 32,
     num_kv_heads: int = 32,
     dim: int = 4096,
+    head_dim: int = None,
 ):
     """
     Convert a state dict from torchtune's format to HF's format. This function
@@ -174,13 +176,16 @@ def tune_to_hf(
         num_heads (int): Number of heads in the model.
         num_kv_heads (int): Number of heads in the key/value projection layers.
         dim (int): Dimension of the model.
+        head_dim (int): Dimension of model attention heads. Default None.
 
     Returns:
         Dict[str, torch.Tensor]: State dict in HF's format.
     """
     converted_state_dict = {}
     inverted_mapping_dict = {v: k for k, v in _FROM_HF.items()}
-    head_dim = dim // num_heads
+
+    if head_dim is None:
+        head_dim = dim // num_heads
 
     def _permute(t, n_heads):
         return (
@@ -197,4 +202,99 @@ def tune_to_hf(
             value = _permute(value, num_kv_heads)
         converted_state_dict[new_key] = value
 
+    return converted_state_dict
+
+
+# Mapping from torchtune LoRA module names to PEFT LoRA module names
+_TO_PEFT_KEYS = {
+    "lora_a": "lora_A",
+    "lora_b": "lora_B",
+    "magnitude": "lora_magnitude_vector",
+}
+
+# Mapping from torchtune module names to target modules for PEFT adapter config
+_TO_PEFT_TARGET_MODULES = {
+    "q_proj": "q_proj",
+    "k_proj": "k_proj",
+    "v_proj": "v_proj",
+    "output_proj": "o_proj",
+    "w1": "gate_proj",
+    "w2": "down_proj",
+    "w3": "up_proj",
+    "output": "lm_head",
+}
+
+# Keys expected in PEFT's adapter_config.json
+_PEFT_CONFIG_EXPECTED_KEYS = ["target_modules", "r", "lora_alpha"]
+
+
+def tune_to_peft_adapter_config(
+    adapter_config: Dict[str, Any],
+    base_model_name_or_path: Optional[str] = None,
+):
+    if not all([x in adapter_config.keys() for x in _PEFT_CONFIG_EXPECTED_KEYS]):
+        raise ValueError(
+            f"PEFT adapter config requires {_PEFT_CONFIG_EXPECTED_KEYS}, found {adapter_config.keys()}"
+        )
+
+    for k in adapter_config["target_modules"]:
+        if k not in _TO_PEFT_TARGET_MODULES:
+            raise ValueError(f"Unknown target module {k}")
+    adapter_config["target_modules"] = list(
+        map(_TO_PEFT_TARGET_MODULES.get, adapter_config["target_modules"])
+    )
+
+    # needed for PEFT to load the adapter weights
+    if base_model_name_or_path:
+        adapter_config["base_model_name_or_path"] = base_model_name_or_path
+
+    return adapter_config
+
+
+def tune_to_peft_adapter_weights(
+    state_dict: Dict[str, torch.Tensor],
+    num_heads: int = 32,
+    num_kv_heads: int = 32,
+    dim: int = 4096,
+    head_dim: Optional[int] = None,
+):
+    converted_state_dict = {}
+    full_mapping = {}
+    # Rather than recreate a separate mapping for LoRA adapter weights, we re-use the
+    # _FROM_HF mapping for base model weights. The mapping is adapted to account for:
+    # LoRA A matrices, LoRA B matrices and the dora magnitude parameter.
+    for peft_key, peft_val in _TO_PEFT_KEYS.items():
+        for hf_key, hf_val in _FROM_HF.items():
+            if hf_val is None:
+                continue
+
+            if peft_key == "magnitude":
+                # e.g. attn.q_proj.magnitude -> attn.q_proj.lora_magnitude_vector
+                adapter_key = hf_val.replace(".weight", f".{peft_key}")
+                adapter_val = hf_key.replace(".weight", f".{peft_val}")
+            else:
+                # e.g. attn.q_proj.lora_a.weight -> attn.q_proj.lora_A.weight
+                adapter_key = hf_val.replace(".weight", f".{peft_key}.weight")
+                adapter_val = hf_key.replace(".weight", f".{peft_val}.weight")
+
+            full_mapping.update({adapter_key: adapter_val})
+
+    if head_dim is None:
+        head_dim = dim // num_heads
+
+    def _permute_lora_matrix(t, n_heads):
+        rank = t.shape[-1]
+        return (
+            t.view(n_heads, head_dim // 2, 2, rank)
+            .transpose(1, 2)
+            .reshape((head_dim * n_heads), rank)
+        )
+
+    for key, value in state_dict.items():
+        new_key = get_mapped_key(key, full_mapping)
+        if "q_proj" in new_key and "lora_B" in new_key:
+            value = _permute_lora_matrix(value, num_heads)
+        elif "k_proj" in new_key and "lora_B" in new_key:
+            value = _permute_lora_matrix(value, num_kv_heads)
+        converted_state_dict["base_model.model." + new_key] = value
     return converted_state_dict

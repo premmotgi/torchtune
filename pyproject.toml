@@ -1,31 +1,40 @@
 # ---- All project specifications ---- #
 [project]
 name = "torchtune"
-description = "A native-PyTorch library for LLM fine-tuning"
+description = "PyTorch native post-training library"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {file = "LICENSE"}
 authors = [
     { name = "PyTorch Team", email = "packages@pytorch.org" },
 ]
-keywords = ["pytorch", "finetuning", "llm"]
+keywords = ["pytorch", "post-training", "rlhf", "finetuning", "llm"]
 dependencies = [
+    # Stable torchdata (no nightly support)
+    "torchdata",
+
     # Hugging Face integrations
     "datasets",
-    "huggingface_hub",
+    "huggingface_hub[hf_transfer]",
     "safetensors",
+
+    # Kaggle Integrations
+    "kagglehub",
 
     # Tokenization
     "sentencepiece",
     "tiktoken",
     "blobfile>=2",
+    "tokenizers",
 
     # Miscellaneous
+    "numpy",
     "tqdm",
     "omegaconf",
+    "psutil",
 
-    # Quantization
-    "torchao==0.1",
+    # Multimodal
+    "Pillow>=9.4.0",
 ]
 dynamic = ["version"]
 
@@ -40,13 +49,18 @@ tune = "torchtune._cli.tune:main"
 [project.optional-dependencies]
 dev = [
     "bitsandbytes>=0.43.0",
+    "comet_ml>=3.44.2",
+    "mlflow",
     "pre-commit",
-    "pytest",
+    "pytest==7.4.0",
     "pytest-cov",
     "pytest-mock",
     "pytest-integration",
     "tensorboard",
+    # Pin urllib3 to avoid transient error from https://github.com/psf/requests/issues/6443
+    "urllib3<2.0.0",
     "wandb",
+    "expecttest",
 ]
 
 [tool.setuptools.dynamic]
@@ -63,7 +77,7 @@ where = [""]
 include = ["torchtune*", "recipes*"]
 
 [tool.setuptools.package-data]
-recipes = ["configs/*.yaml", "configs/*/*.yaml"]
+recipes = ["configs/*.yaml", "configs/*/*.yaml", "configs/*/*/*.yaml"]
 
 
 # ---- Tooling specifications ---- #
@@ -76,7 +90,7 @@ target-version = ["py38"]
 [tool.pydoclint]
 style = 'google'
 check-return-types = 'False'
-exclude = ['tests/torchtune/models/llama2/scripts/', 'tests/torchtune/models/mistral/scripts/']
+exclude = 'tests/torchtune/models/(\w+)/scripts/|recipes/|torchtune/modules/_export'
 
 [tool.pytest.ini_options]
 addopts = ["--showlocals", "--import-mode=prepend", "--without-integration", "--without-slow-integration"]

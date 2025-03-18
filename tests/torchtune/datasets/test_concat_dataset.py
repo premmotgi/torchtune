@@ -6,7 +6,25 @@
 
 import pytest
 from datasets import Dataset
+from torch.utils.data import Dataset as TorchDataset
 from torchtune.datasets._concat import ConcatDataset
+from torchtune.datasets._packed import PackedDataset
+
+
+class DummyDataset(TorchDataset):
+    def __init__(self, sample_size):
+        self.sample_size = sample_size
+
+    def __getitem__(self, index):
+        if index >= 1000:
+            raise IndexError()
+        return {
+            "tokens": [index] * self.sample_size,
+            "labels": [index] * self.sample_size,
+        }
+
+    def __len__(self):
+        return 1000
 
 
 class TestConcatDataset:
@@ -18,6 +36,16 @@ class TestConcatDataset:
         ds4 = Dataset.from_list([{"data": f"ds4_{i}"} for i in range(16)])
         ds5 = Dataset.from_list([{"data": f"ds5_{i}"} for i in range(23)])
         ds6 = Dataset.from_list([{"data": f"ds6_{i}"} for i in range(42)])
+        return [ds1, ds2, ds3, ds4, ds5, ds6]
+
+    @pytest.fixture
+    def torch_datasets(self):
+        ds1 = DummyDataset(4)
+        ds2 = DummyDataset(8)
+        ds3 = DummyDataset(15)
+        ds4 = DummyDataset(16)
+        ds5 = DummyDataset(23)
+        ds6 = DummyDataset(42)
         return [ds1, ds2, ds3, ds4, ds5, ds6]
 
     def test_length(self, datasets):
@@ -51,3 +79,44 @@ class TestConcatDataset:
 
         with pytest.raises(TypeError):
             multi_dataset["invalid_type"]  # Non-integer index
+
+    def test_single_packed_dataset(self, torch_datasets):
+        torch_datasets[0] = PackedDataset(
+            torch_datasets[0],
+            max_seq_len=25,
+            max_packs=5,
+            split_across_pack=True,
+        )
+
+        with pytest.raises(ValueError):
+            concated_dataset = ConcatDataset(torch_datasets)
+
+    def test_all_packed_datasets(self, torch_datasets):
+        for i in range(len(torch_datasets)):
+            torch_datasets[i] = PackedDataset(
+                torch_datasets[i],
+                max_seq_len=2000,
+                max_packs=16,
+                split_across_pack=True,
+            )
+        concated_dataset = ConcatDataset(torch_datasets)
+        assert concated_dataset.packed
+
+        # 2k tokens per pack
+        # 1st ds has 4k tokens, 2nd ds has 8k tokens, 3rd ds has 15k tokens
+        # 4th ds has 16k tokens, 5th ds has 23k tokens, 6th ds has 42k tokens
+
+        assert concated_dataset[0]["seq_lens"][0] == 4
+        # 2nd packed ds starts at idx 2
+        assert concated_dataset[2]["seq_lens"][0] == 8
+        # 3rd packed ds starts at idx 6
+        assert concated_dataset[6]["seq_lens"][0] == 15
+        # 4th packed ds starts at idx 14
+        assert concated_dataset[14]["seq_lens"][0] == 16
+        # 5th packed ds starts at idx 22
+        assert concated_dataset[22]["seq_lens"][0] == 23
+        # 6th packed ds starts at idx 34
+        assert concated_dataset[34]["seq_lens"][0] == 42
+
+        # Total length is 2 + 4 + 8 + 8 + 12 + 16 (because of max_packs) = 50
+        assert len(concated_dataset) == 50
