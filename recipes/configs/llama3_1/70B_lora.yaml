@@ -39,7 +39,7 @@ save_adapter_weights_only: True # Set to false to save the whole model + adapter
 
 # Dataset and Sampler
 dataset:
-  _component_: torchtune.datasets.alpaca_dataset
+  _component_: torchtune.datasets.databricks_dolly_15k
   packed: False  # True increases speed
 seed: null
 shuffle: True
