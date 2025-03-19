@@ -6,8 +6,13 @@
 
 from functools import partial
 
-from torchtune.datasets._instruct import instruct_dataset, InstructDataset
-from torchtune.modules.tokenizers import Tokenizer
+from typing import Any, Callable, Dict, Optional, Union
+
+from torchtune.data._messages import AlpacaToMessages
+
+from torchtune.datasets._packed import PackedDataset
+from torchtune.datasets._sft import SFTDataset
+from torchtune.modules.transforms.tokenizers import ModelTokenizer
 
 
 def databricks_dolly_15k(
