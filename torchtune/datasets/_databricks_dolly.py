@@ -6,18 +6,50 @@
 
 from functools import partial
 
-from torchtune.datasets._instruct import instruct_dataset, InstructDataset
-from torchtune.modules.tokenizers import Tokenizer
+from typing import Any, Callable, Dict, Optional, Union
+
+from torchtune.data._messages import AlpacaToMessages
+
+from torchtune.datasets._packed import PackedDataset
+from torchtune.datasets._sft import SFTDataset
+from torchtune.modules.transforms.tokenizers import ModelTokenizer
 
 
 def databricks_dolly_15k(
-    tokenizer: Tokenizer,
+    tokenizer: ModelTokenizer,
     *,
     source: str = "databricks/databricks-dolly-15k",
-    train_on_input: bool = True,
     max_seq_len: int = 512,
     packed: bool = False,
-) -> InstructDataset:
+    column_map: Optional[Dict[str, str]] = {"input": "instruction", "output": "response"},
+    train_on_input: bool = True,
+    filter_fn: Optional[Callable] = None,
+    split: str = "train",
+    **load_dataset_kwargs: Dict[str, Any],
+
+    ) -> Union[SFTDataset, PackedDataset]:
+    
+
+    message_transform = AlpacaToMessages(
+        train_on_input=train_on_input, column_map=column_map
+    )
+    ds = SFTDataset(
+        source=source,
+        message_transform=message_transform,
+        model_transform=tokenizer,
+        filter_fn=filter_fn,
+        split=split,
+        **load_dataset_kwargs,
+    )
+    
+    if packed:
+        if tokenizer.max_seq_len is None:
+            raise ValueError(
+                "PackedDataset requires a max_seq_len to be set on the tokenizer."
+            )
+        return PackedDataset(ds, max_seq_len=tokenizer.max_seq_len)
+    return ds
+
     """
     Support for family of Alpaca-style datasets from Hugging Face Datasets using
     the `data input format <https://huggingface.co/datasets/tatsu-lab/alpaca#data-instances>`_
@@ -50,7 +82,7 @@ def databricks_dolly_15k(
         >>>     print(f"Batch size: {len(batch)}")
         >>> Batch size: 8
     """
-
+"""
     return instruct_dataset(
         tokenizer=tokenizer,
         source=source,
@@ -60,6 +92,6 @@ def databricks_dolly_15k(
         packed=packed,
         split="train",
     )
-
+"""
 
 #alpaca_cleaned_dataset = partial(databricks_dolly_15k, source="yahma/alpaca-cleaned")
